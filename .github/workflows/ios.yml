@@ -1,0 +1,54 @@
+name: iOS
+
+on:
+  push:
+    branches: [develop]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  core-tests:
+    name: Core package tests
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run AntennaPodCore tests
+        run: swift test --package-path Packages/AntennaPodCore
+
+  core-tests-linux:
+    name: Core package tests (Linux)
+    runs-on: ubuntu-latest
+    container: swift:6.0
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run AntennaPodCore tests
+        run: swift test --package-path Packages/AntennaPodCore
+
+  build:
+    name: Build app
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Show Xcode version
+        run: xcodebuild -version
+      - name: Build for iOS Simulator
+        run: |
+          xcodebuild \
+            -project AntennaPod.xcodeproj \
+            -scheme AntennaPod \
+            -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+      - name: Upload build log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build/Logs/Build
+          if-no-files-found: ignore

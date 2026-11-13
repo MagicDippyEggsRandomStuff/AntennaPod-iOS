@@ -1,44 +1,76 @@
-# AntennaPod
+# AntennaPod for iOS
 
-[![GitHub check runs](https://img.shields.io/github/actions/workflow/status/AntennaPod/AntennaPod/checks.yml?branch=develop)](https://github.com/AntennaPod/AntennaPod/actions/workflows/checks.yml?query=branch%3Adevelop)
-[![License: GPL v3](https://img.shields.io/github/license/AntennaPod/AntennaPod)](https://www.gnu.org/licenses/gpl-3.0)
-[![GitHub Release](https://img.shields.io/github/v/release/AntennaPod/AntennaPod)](https://github.com/AntennaPod/AntennaPod/releases)
-[![https://img.shields.io/github/commits-since/AntennaPod/AntennaPod/latest/develop](https://img.shields.io/github/commits-since/AntennaPod/AntennaPod/latest/develop)](https://github.com/AntennaPod/AntennaPod/commits/develop/)
-[![Translations on Weblate](https://hosted.weblate.org/widget/antennapod/app/svg-badge.svg?native=1)](https://hosted.weblate.org/engage/antennapod/)
-[![Good first issue](https://img.shields.io/github/issues-search?query=repo%3AAntennaPod%2FAntennaPod%20is%3Aopen%20is%3Aissue%20label%3A%22Good%20first%20issue%22&label=Good%20first%20issue&labelColor=grey&color=%235F1984)](https://github.com/AntennaPod/AntennaPod/labels/Good%20first%20issue)
+A native SwiftUI port of [AntennaPod](https://antennapod.org), the open-source
+podcast manager, targeting iOS 15 and later.
 
-This is the official repository of AntennaPod, the easy-to-use, flexible and open-source podcast manager for Android.
+This repository contains the iOS app. The original Android sources are kept on
+the [`android-reference`](https://github.com/MagicDippyEggsRandomStuff/AntennaPod-iOS/tree/android-reference)
+branch so the port can be compared against the reference implementation.
 
-[<img src="https://play.google.com/intl/en_us/badges/images/generic/en_badge_web_generic.png"
-      alt="Get it on Google Play"
-      height="70">](https://play.google.com/store/apps/details?id=de.danoeh.antennapod)
-[<img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png"
-      alt="Get it on F-Droid"
-      height="70">](https://f-droid.org/app/de.danoeh.antennapod)
+## Status
 
-<img src="https://raw.githubusercontent.com/AntennaPod/StoreMetadata/main/listings/en-US/graphics/phone-screenshots/00.png" alt="Screenshot 0" height="200"> <img src="https://raw.githubusercontent.com/AntennaPod/StoreMetadata/main/listings/en-US/graphics/phone-screenshots/01.png" alt="Screenshot 1" height="200"> <img src="https://raw.githubusercontent.com/AntennaPod/StoreMetadata/main/listings/en-US/graphics/phone-screenshots/02.png" alt="Screenshot 2" height="200"> <img src="https://raw.githubusercontent.com/AntennaPod/StoreMetadata/main/listings/en-US/graphics/phone-screenshots/03.png" alt="Screenshot 3" height="200"> <img src="https://raw.githubusercontent.com/AntennaPod/StoreMetadata/main/listings/en-US/graphics/phone-screenshots/04.png" alt="Screenshot 4" height="200"> <img src="https://raw.githubusercontent.com/AntennaPod/StoreMetadata/main/listings/en-US/graphics/phone-screenshots/05.png" alt="Screenshot 5" height="200">
+This is an early MVP. It is usable for the core podcast workflow:
 
+- Subscribe by search (iTunes directory), feed URL, or OPML import/export
+- Podcast and episode lists with played/unplayed/favorite state
+- Streaming and background download playback
+- Up-next queue with reordering
+- Playback speed, skip intervals, sleep timer
+- Background audio, lock screen and Control Center controls
+- Feed refresh with ETag/Last-Modified, auto-download, auto-delete hooks
+- OPML import and export
 
-## Feedback
-You can use the [AntennaPod Forum](https://forum.antennapod.org/) for discussions about the app or just podcasting in general.
+Not yet implemented: chapters UI, transcripts, gpodder sync, statistics,
+filters, widgets, CarPlay, Chromecast, and full AntennaPod settings parity. See
+`docs/PORTING.md` for the feature matrix.
 
-Bug reports and feature requests can be submitted [here](https://github.com/AntennaPod/AntennaPod/issues) (please read the [instructions](https://github.com/AntennaPod/AntennaPod/blob/develop/CONTRIBUTING.md) on how to report a bug and how to submit a feature request first!).
+## Requirements
 
-We also hold regular community calls to discuss anything AntennaPod-related. [Come join the next call](https://forum.antennapod.org/t/monthly-community-call/1869)!
+- macOS with Xcode 15 or newer (the project targets iOS 15)
+- A device or simulator running iOS 15+
 
-## Help to test AntennaPod
-AntennaPod has many users and we don't want them to run into trouble when we add a new feature. It's important that we have a significant group test our app, so that we know all possible combinations of phones, Android versions and use cases work as expected. Check out our wiki on how to join our [Beta testing program](https://antennapod.org/documentation/general/beta)! If a bug is reported during the beta period, chances are high that it will be fixed before the upcoming stable version. If it is reported later, fixing might take another full beta cycle. So definitely let us know if something is not right.
+## Building
+
+Open `AntennaPod.xcodeproj` in Xcode and run the `AntennaPod` scheme, or build
+from the command line:
+
+```sh
+xcodebuild \
+  -project AntennaPod.xcodeproj \
+  -scheme AntennaPod \
+  -destination 'generic/platform=iOS Simulator' \
+  CODE_SIGNING_ALLOWED=NO \
+  build
+```
+
+The app is generated from the Swift sources under `AntennaPod/`. If you add or
+remove a Swift file, regenerate the project:
+
+```sh
+python3 scripts/generate_xcodeproj.py
+```
+
+The shared `AntennaPodCore` package contains the feed parser, OPML support,
+library model, download paths, and persistence. It has no UIKit dependency and
+can be tested on any platform with a Swift toolchain:
+
+```sh
+swift test --package-path Packages/AntennaPodCore
+```
+
+CI runs both the core tests and a simulator build on macOS; see
+`.github/workflows/ios.yml`.
+
+## Persistence
+
+The library is stored as JSON in Application Support (`library.json`, with a
+`.bak` fallback). This keeps the MVP dependency-free; a Core Data or SwiftData
+store can replace `LibraryStore` later without touching the rest of the app.
 
 ## License
 
-AntennaPod is licensed under the GNU General Public License (GPL-3.0). You can find the license text in the [LICENSE](https://github.com/AntennaPod/AntennaPod/blob/develop/LICENSE) file.
+AntennaPod is licensed under the GNU General Public License v3.0. This port is a
+derivative work and is distributed under the same license. See `LICENSE`.
 
-## Translating AntennaPod
-
-If you want to translate AntennaPod into another language, you can visit our [Weblate page](https://hosted.weblate.org/projects/antennapod/).
-
-
-## Building AntennaPod
-
-You can build AntennaPod just like any other Android project. Refer to the [instructions](https://github.com/AntennaPod/AntennaPod/blob/develop/CONTRIBUTING.md) for more details.
-
+AntennaPod is developed by the AntennaPod community. This iOS port is
+independent and is not affiliated with the Android project's maintainers.
