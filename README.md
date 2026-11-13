@@ -58,8 +58,26 @@ can be tested on any platform with a Swift toolchain:
 swift test --package-path Packages/AntennaPodCore
 ```
 
-CI runs both the core tests and a simulator build on macOS; see
-`.github/workflows/ios.yml`.
+CI runs the core tests, a simulator build, and an unsigned device build on
+macOS; see `.github/workflows/ios.yml`.
+
+## Installing a test build (TrollStore, iOS 15)
+
+Every push to `develop` produces an unsigned IPA artifact, so no Apple
+developer account or provisioning profile is needed:
+
+1. Open the latest [Actions run](https://github.com/MagicDippyEggsRandomStuff/AntennaPod-iOS/actions/workflows/ios.yml)
+   for the `develop` branch.
+2. Download the `AntennaPod-unsigned-ipa` artifact (GitHub serves it as a zip;
+   extract `AntennaPod-unsigned.ipa` from it).
+3. Transfer the IPA to the device and open it with TrollStore. TrollStore signs
+   and installs it locally.
+
+The build is unsigned on purpose. Do not try to install it through Xcode,
+Apple Configurator, or TestFlight; those paths require a valid signature.
+
+TestFlight and App Store distribution will need a paid Apple Developer account
+and real signing certificates, which can be added to the workflow later.
 
 ## Persistence
 

@@ -52,3 +52,67 @@ jobs:
           name: build-log
           path: build/Logs/Build
           if-no-files-found: ignore
+
+  ipa:
+    name: Build unsigned IPA
+    runs-on: macos-15
+    needs: core-tests
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Build for device (unsigned)
+        run: |
+          xcodebuild \
+            -project AntennaPod.xcodeproj \
+            -scheme AntennaPod \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build/DerivedData \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build
+
+      - name: Package unsigned IPA
+        run: |
+          set -euo pipefail
+          APP="build/DerivedData/Build/Products/Release-iphoneos/AntennaPod.app"
+          test -d "$APP"
+          mkdir -p build/ipa/Payload
+          cp -R "$APP" build/ipa/Payload/
+          (cd build/ipa && zip -qry ../AntennaPod-unsigned.ipa Payload)
+
+          echo "Binary architecture:"
+          file "$APP/AntennaPod"
+          echo "IPA contents:"
+          unzip -l build/AntennaPod-unsigned.ipa
+          echo "Info.plist:"
+          plutil -p "$APP/Info.plist"
+
+      - name: Check signature state
+        run: |
+          APP="build/DerivedData/Build/Products/Release-iphoneos/AntennaPod.app"
+          if codesign --verify "$APP" >/dev/null 2>&1; then
+            echo "note: app carries an ad-hoc signature; TrollStore re-signs it on install."
+          else
+            echo "App is unsigned, which is what TrollStore expects."
+          fi
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: AntennaPod-unsigned-ipa
+          path: build/AntennaPod-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload device build log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ipa-build-log
+          path: build/DerivedData/Logs/Build
+          if-no-files-found: ignore

@@ -44,9 +44,10 @@ xcodebuild \
   build
 ```
 
-CI (`.github/workflows/ios.yml`) runs core tests on macOS and Linux plus the
-simulator build. There is no Xcode unit-test target yet; add tests to the core
-package instead.
+CI (`.github/workflows/ios.yml`) runs core tests on macOS and Linux, the
+simulator build, and an unsigned device build exposed as the
+`AntennaPod-unsigned-ipa` artifact (for TrollStore on iOS 15). There is no Xcode
+unit-test target yet; add tests to the core package instead.
 
 ## Git
 
