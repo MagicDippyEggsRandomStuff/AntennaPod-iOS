@@ -13,6 +13,7 @@ public enum NetworkError: Error, LocalizedError, Equatable {
     case notAFeed
     case responseTooLarge
     case emptyResponse
+    case notModified
 
     public var errorDescription: String? {
         switch self {
@@ -21,6 +22,7 @@ public enum NetworkError: Error, LocalizedError, Equatable {
         case .notAFeed: return "This URL points to a web page, not a podcast feed."
         case .responseTooLarge: return "The feed is too large to download."
         case .emptyResponse: return "The server returned an empty response."
+        case .notModified: return "The feed has not changed."
         }
     }
 }
@@ -89,12 +91,18 @@ public struct FeedLoader: Sendable {
         if let etag { request.setValue(etag, forHTTPHeaderField: "If-None-Match") }
         if let lastModified { request.setValue(lastModified, forHTTPHeaderField: "If-Modified-Since") }
 
-        let (data, response) = try await client.data(for: request)
-        guard (200..<300).contains(response.statusCode) else {
-            throw NetworkError.httpStatus(response.statusCode)
+        let data: Data
+        let response: HTTPURLResponse
+        do {
+            (data, response) = try await client.data(for: request)
+        } catch NetworkError.httpStatus(304) {
+            throw NetworkError.notModified
         }
         guard data.count <= maximumSize else {
             throw NetworkError.responseTooLarge
+        }
+        guard (200..<300).contains(response.statusCode) else {
+            throw response.statusCode == 304 ? NetworkError.notModified : NetworkError.httpStatus(response.statusCode)
         }
         guard !looksLikeHTML(data) else {
             throw NetworkError.notAFeed

@@ -72,6 +72,20 @@ final class FeedLoaderTests: XCTestCase {
             XCTAssertEqual(error as? NetworkError, .httpStatus(404))
         }
     }
+
+    func testNotModifiedResponse() async {
+        let client = MockHTTPClient()
+        client.statusCode = 304
+        client.responseData = Data()
+        let loader = FeedLoader(client: client)
+        do {
+            _ = try await loader.load(url: URL(string: "https://example.com/feed.xml")!,
+                                  etag: "abc")
+            XCTFail("Expected failure")
+        } catch {
+            XCTAssertEqual(error as? NetworkError, .notModified)
+        }
+    }
 }
 
 final class PodcastSearchClientTests: XCTestCase {

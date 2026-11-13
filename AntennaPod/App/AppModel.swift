@@ -177,7 +177,14 @@ final class AppModel: ObservableObject {
                 $0.lastRefreshedAt = Date()
                 $0.lastRefreshFailed = false
             }
-        case .failure:
+        case .failure(let error):
+            if (error as? NetworkError) == .notModified {
+                library.updatePodcast(id: podcastID) {
+                    $0.lastRefreshedAt = Date()
+                    $0.lastRefreshFailed = false
+                }
+                return
+            }
             library.updatePodcast(id: podcastID) {
                 $0.lastRefreshFailed = true
             }
@@ -201,6 +208,14 @@ final class AppModel: ObservableObject {
                 autoDownloadLatest(for: podcastID)
             }
         } catch {
+            if (error as? NetworkError) == .notModified {
+                library.updatePodcast(id: podcastID) {
+                    $0.lastRefreshedAt = Date()
+                    $0.lastRefreshFailed = false
+                }
+                persist()
+                return
+            }
             library.updatePodcast(id: podcastID) { $0.lastRefreshFailed = true }
             persist()
             alert = AppAlert(title: "Could not refresh podcast", message: error.localizedDescription)
